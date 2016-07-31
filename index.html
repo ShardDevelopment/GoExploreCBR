@@ -321,6 +321,7 @@
 
             var pokemonByName = swap(pokemonById);
 
+
             if (Object.keys(pokemonByName).indexOf(inputValue) >= 0) {
 
                 var id = pokemonByName[inputValue];
@@ -329,6 +330,46 @@
                 document.getElementById("pokemonName").innerHTML = pokemonById[id];
 
                 updateInformationPane(id);
+
+                console.log(document.getElementById("pokemonType"))
+
+                document.getElementById("pokemonType").innerHTML = "Loading type..."
+                document.getElementById("pokemonBaseExperience").innerHTML = "Loading base experience...";
+                document.getElementById("pokemonWeight").innerHTML = "Loading weight...";
+
+                document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + id + ".png";
+                document.getElementById("pokemonName").innerHTML = pokemonById[id];
+
+                updateInformationPane(id);
+
+                var xmlHttp = new XMLHttpRequest();
+
+                xmlHttp.onreadystatechange = function() { 
+
+                  if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+
+                      var returnedData = xmlHttp.responseText;
+
+                      var theJson = JSON.parse(returnedData);
+                      console.log(theJson.types[0].type.name);
+
+                      document.getElementById("pokemonType").innerHTML = "Type: "
+
+                      for (typeIndex in theJson.types) {
+
+                        document.getElementById("pokemonType").innerHTML += theJson.types[typeIndex].type.name + " ";
+
+                      }
+
+                      document.getElementById("pokemonBaseExperience").innerHTML = "Base experience: " + theJson.base_experience;
+                      document.getElementById("pokemonWeight").innerHTML = "Weight: " + theJson.weight;
+
+                  }
+
+                }
+
+                xmlHttp.open("GET", "https://pokeapi.co/api/v2/pokemon/" + id, true);
+                xmlHttp.send(null);
 
             }
 
@@ -341,6 +382,44 @@
 
               document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + id + ".png";
               document.getElementById("pokemonName").innerHTML = pokemonById[id];
+
+              document.getElementById("pokemonType").innerHTML = "Loading type..."
+              document.getElementById("pokemonBaseExperience").innerHTML = "Loading base experience...";
+              document.getElementById("pokemonWeight").innerHTML = "Loading weight...";
+
+              document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + id + ".png";
+              document.getElementById("pokemonName").innerHTML = pokemonById[id];
+
+              updateInformationPane(id);
+
+              var xmlHttp = new XMLHttpRequest();
+
+              xmlHttp.onreadystatechange = function() { 
+
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+
+                    var returnedData = xmlHttp.responseText;
+
+                    var theJson = JSON.parse(returnedData);
+                    console.log(theJson.types[0].type.name);
+
+                    document.getElementById("pokemonType").innerHTML = "Type: "
+
+                    for (typeIndex in theJson.types) {
+
+                      document.getElementById("pokemonType").innerHTML += theJson.types[typeIndex].type.name + " ";
+
+                    }
+
+                    document.getElementById("pokemonBaseExperience").innerHTML = "Base experience: " + theJson.base_experience;
+                    document.getElementById("pokemonWeight").innerHTML = "Weight: " + theJson.weight;
+
+                }
+
+              }
+
+              xmlHttp.open("GET", "https://pokeapi.co/api/v2/pokemon/" + id, true);
+              xmlHttp.send(null);
 
             }
 
@@ -447,11 +526,11 @@
 
                         for (index in informationCells) {
 
-			            	var cell = informationCells[index];
+                    var cell = informationCells[index];
 
-			           		cell.remove()
+                    cell.remove()
 
-			          	}
+                  }
 
                         for (index in allPOI) {
 
@@ -519,6 +598,61 @@
 
                 xmlHttp4.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/publicToilets", true);
                 xmlHttp4.send(null);
+
+                // REQUEST SKATE PARKS DATA
+
+                /*var xmlHttp5 = new XMLHttpRequest();
+
+                xmlHttp5.onreadystatechange = function() { 
+
+                    if (xmlHttp5.readyState == 4 && xmlHttp5.status == 200) {
+
+                        plotPoiData(xmlHttp4.responseText);
+
+                    }
+
+                }
+
+              
+
+                xmlHttp5.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/skateParks", true);
+                xmlHttp5.send(null);*/
+
+                /*
+
+                // REQUEST ARTWORK DATA
+
+                var xmlHttp4 = new XMLHttpRequest();
+
+                xmlHttp4.onreadystatechange = function() { 
+
+                    if (xmlHttp4.readyState == 4 && xmlHttp4.status == 200) {
+
+                        plotPoiData(xmlHttp4.responseText);
+
+                    }
+
+                }
+
+                xmlHttp4.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/artwork", true);
+                xmlHttp4.send(null);
+
+                // REQUEST PLAYGROUNDS DATA
+
+                var xmlHttp4 = new XMLHttpRequest();
+
+                xmlHttp4.onreadystatechange = function() { 
+
+                    if (xmlHttp4.readyState == 4 && xmlHttp4.status == 200) {
+
+                        plotPoiData(xmlHttp4.responseText);
+
+                    }
+
+                }
+
+                xmlHttp4.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/playgrounds", true);
+                xmlHttp4.send(null);*/
 
                 document.getElementById("loadingDiv").style.animationName = "hideEffect";
                 document.getElementById("loadingDiv").style.animationDuration = "1s";
