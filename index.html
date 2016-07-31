@@ -1,0 +1,560 @@
+
+<!--
+
+  Created by Shard Development for GO EXPLORE CBR
+
+-->
+
+<html>
+
+  <head>
+
+    <title>Go explore CBR</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="main.css">
+    <link rel="icon" type="image/png" href="images/pokeball.png">
+
+  </head>
+
+  <body>
+
+    <input type="text" id="pokemonSearchBar" placeholder="Pokemon name or id" />
+    <button id="searchButton" onclick="searchButtonClicked()">Search</button>
+    <img src="images/logo.png" id="logo" />
+
+    <div id="pokemonInformationPane">
+
+      <img src="images/pokeball.png" id="pokeball" />
+      
+      <img src="https://pokeapi.co/media/sprites/pokemon/7.png" id="pokemonImage" />
+
+      <h2 id="pokemonName">Squirtle</h2>
+
+      <p id="pokemonType"></p>
+      <p id="pokemonWeight"></p>
+      <p id="pokemonBaseExperience"></p>
+
+    </div>
+
+    <div id="loadingDiv">
+      
+      <img src="https://projects.sharddevelopment.com/goexplorecbr/images/loadingSprites/main.gif" id="loadingGifImage" />
+
+      <h2>Loading...</h2>
+
+    </div>
+
+    <div id="informationPane"></div>
+
+    <div id="map"></div>
+
+    <script>
+
+      var map;
+      var lat = -35.2965108;
+      var long = 149.1336349;
+      var generatorCounter = 0;
+      var pageLoaded = false;
+
+      var allPOI = [];
+
+      var poiForPokemonWithId = {}
+      var orderedPoi = [];
+
+      var informationCells = []
+
+      function createInformationNode(title, description, numberOfPokemon, rank, imageUrl) {
+
+          var mainDiv = document.createElement("DIV");
+          mainDiv.style.height = "125";
+          mainDiv.style.position = "relative";
+          mainDiv.style.marginBottom = "20";
+
+          var rankElement = document.createElement("P");
+          rankElement.style.position = "absolute";
+          rankElement.style.bottom = "5";
+          rankElement.style.left = "15";
+          var rankElementText = document.createTextNode(rank);
+          rankElement.appendChild(rankElementText);
+
+          var amountOfPokemonContainer = document.createElement("IMG");
+          amountOfPokemonContainer.style.position = "absolute";
+          amountOfPokemonContainer.style.left = "12";
+          amountOfPokemonContainer.style.top = "10";
+          amountOfPokemonContainer.style.height = "30";
+          amountOfPokemonContainer.style.width = "30";
+          amountOfPokemonContainer.src="images/amountOfPokemonIcon.png";
+
+          var imageElement = document.createElement("IMG");
+          imageElement.style.position = "absolute";
+          imageElement.style.top = "35";
+          imageElement.style.right = "20";
+          imageElement.style.width = "50";
+          imageElement.style.height = "50";
+          //imageElement.style.border = "solid black 2px";
+          imageElement.src = imageUrl
+
+          var titleElement = document.createElement("H2");
+          titleElement.style.position = "absolute";
+          titleElement.style.top = "5";
+          titleElement.style.left = "60";
+          titleElement.appendChild(document.createTextNode(title));
+
+          var descriptionElement = document.createElement("P");
+          descriptionElement.style.position = "absolute";
+          descriptionElement.style.top = "40";
+          descriptionElement.style.left = "60";
+          descriptionElement.style.width = "280";
+          var descriptionElementText = document.createTextNode(description);
+          descriptionElement.appendChild(descriptionElementText);
+
+          var numberOfPokemonElement = document.createElement("P");
+          numberOfPokemonElement.style.position = "absolute";
+          numberOfPokemonElement.style.top = "2";
+          numberOfPokemonElement.style.left = "19";
+          numberOfPokemonElement.style.fontSize = "14";
+          numberOfPokemonElement.style.textAlign = "center";
+          var numberOfPokemonText = document.createTextNode(numberOfPokemon);
+          numberOfPokemonElement.appendChild(numberOfPokemonText);
+
+          mainDiv.appendChild(rankElement);
+          //mainDiv.appendChild(glyphElement);
+          mainDiv.appendChild(imageElement);
+          mainDiv.appendChild(titleElement);
+          mainDiv.appendChild(amountOfPokemonContainer);
+          mainDiv.appendChild(descriptionElement);
+          mainDiv.appendChild(numberOfPokemonElement);
+
+          document.getElementById("informationPane").appendChild(mainDiv);
+
+          informationCells.push(mainDiv);
+
+      }
+
+      function plotPokemon(data, object) {
+        
+        var json = JSON.parse(data)
+
+        var amountOfPokemon = Object.keys(json).length;
+        var pokemonIndex = 1;
+
+        while (pokemonIndex <= amountOfPokemon) {
+
+          var pokemon = json[pokemonIndex-1]
+
+          if (object != null) {
+
+            if (pokemon.pokemonId in poiForPokemonWithId) {
+
+              if (poiForPokemonWithId[pokemon.pokemonId].indexOf(object) >= 0) {} else {
+                poiForPokemonWithId[pokemon.pokemonId].push(object);
+              }
+
+            } else {
+
+              poiForPokemonWithId[pokemon.pokemonId] = [object];
+
+            }
+
+          }
+
+           var image = {
+              url: "https://pokeapi.co/media/sprites/pokemon/" + pokemon.pokemonId + ".png",
+              size: new google.maps.Size(96, 96),
+              origin: new google.maps.Point(0, 0),
+              anchor: new google.maps.Point(48, 48)
+            };
+
+          var marker = new google.maps.Marker({
+              position: {lat: pokemon.latitude, lng: pokemon.longitude},
+              map: map,
+              icon: image,
+              title: pokemonById[pokemon.pokemonId],
+              pokemonId: "1",
+              type: "",
+              baseExperience: "",
+              weight: ""
+          });
+
+          marker.pokemonId = pokemon.pokemonId;
+          
+
+          google.maps.event.addListener(marker, 'click', function(event) {
+
+            if (pageLoaded == true) {
+
+              document.getElementById("pokemonType").innerHTML = "Loading type..."
+              document.getElementById("pokemonBaseExperience").innerHTML = "Loading base experience...";
+              document.getElementById("pokemonWeight").innerHTML = "Loading weight...";
+
+              document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + this.pokemonId + ".png";
+              document.getElementById("pokemonName").innerHTML = pokemonById[this.pokemonId];
+
+              updateInformationPane(this.pokemonId);
+
+              var xmlHttp = new XMLHttpRequest();
+
+              xmlHttp.onreadystatechange = function() { 
+
+                if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+
+                    var returnedData = xmlHttp.responseText;
+
+                    var theJson = JSON.parse(returnedData);
+                    console.log(theJson.types[0].type.name);
+
+                    document.getElementById("pokemonType").innerHTML = "Type: "
+
+                    for (typeIndex in theJson.types) {
+
+                      document.getElementById("pokemonType").innerHTML += theJson.types[typeIndex].type.name + " ";
+
+                    }
+
+                    document.getElementById("pokemonBaseExperience").innerHTML = "Base experience: " + theJson.base_experience;
+                    document.getElementById("pokemonWeight").innerHTML = "Weight: " + theJson.weight;
+
+                }
+
+              }
+
+              xmlHttp.open("GET", "https://pokeapi.co/api/v2/pokemon/" + this.pokemonId, true);
+              xmlHttp.send(null);
+
+              if (document.getElementById("pokemonInformationPane").style.opacity != 0.8) {
+
+                document.getElementById("pokemonInformationPane").style.animationName = "visibleEffect";
+                document.getElementById("pokemonInformationPane").style.animationDuration = "1s";
+
+              }
+
+            }
+
+          });
+
+          pokemonIndex += 1;
+
+        }
+
+      }
+
+      function plotPoiData(data) {
+
+        var json = JSON.parse(data)
+
+        var poiInfo = json.pointsOfInterest;
+        var amountOfPOI = Object.keys(poiInfo).length;
+        var poiIndex = 1;
+
+        while (poiIndex <= amountOfPOI) {
+
+          var poi = poiInfo[poiIndex-1]
+
+          var image = {
+              url: "images/siteAssets/" + poi.poiType + "Icon.png",
+              size: new google.maps.Size(25, 25),
+              origin: new google.maps.Point(0, 0),
+              anchor: new google.maps.Point(12, 12)
+            };
+
+          var marker = new google.maps.Marker({
+              position: {lat: parseFloat(poi.locationLat), lng: parseFloat(poi.locationLong)},
+              map: map,
+              icon: image,
+              title: poi.locationMapTitle
+          });
+
+          createInformationNode(poi.locationTitle, poi.locationDescription, poi.pokemonPresent.length, "1", "images/siteAssets/" + poi.poiType + "Icon.png");
+          allPOI.push(poi);
+
+          plotPokemon(JSON.stringify(poi.pokemonPresent), poi);
+
+          poiIndex += 1;
+
+        }
+
+      }
+
+      function getLocation() {
+
+          if (navigator.geolocation) {
+
+            navigator.geolocation.getCurrentPosition(function(position) {
+
+              //lat = position.coords.latitude;
+              //long = position.coords.longitude;
+
+              map.setCenter({lat: lat, lng: long});
+
+              makeMap()
+
+            }, function() {
+
+              console.log("NO LOCATION AVAILABLE");
+
+              makeMap()
+
+            });
+          } else {
+            // Browser doesn't support Geolocation
+            console.log("NO LOCATION AVAILABLE");
+
+            makeMap()
+
+
+          }
+
+      }
+
+
+      function searchButtonClicked() {
+
+        if (pageLoaded == true) {
+
+          var inputValue = document.getElementById("pokemonSearchBar").value
+
+          if (isNaN(inputValue)) {
+
+            // ID
+            inputValue = inputValue.charAt(0).toUpperCase() + inputValue.slice(1)
+
+            var pokemonByName = swap(pokemonById);
+
+            if (Object.keys(pokemonByName).indexOf(inputValue) >= 0) {
+
+                var id = pokemonByName[inputValue];
+
+                document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + id + ".png";
+                document.getElementById("pokemonName").innerHTML = pokemonById[id];
+
+                updateInformationPane(id);
+
+            }
+
+
+          } else {
+
+            var id = parseInt(inputValue)
+
+            if (id <= 721) {
+
+              document.getElementById("pokemonImage").src = "https://pokeapi.co/media/sprites/pokemon/" + id + ".png";
+              document.getElementById("pokemonName").innerHTML = pokemonById[id];
+
+            }
+
+
+
+          }
+
+          if (document.getElementById("pokemonInformationPane").style.opacity != 0.8) {
+
+            document.getElementById("pokemonInformationPane").style.animationName = "visibleEffect";
+            document.getElementById("pokemonInformationPane").style.animationDuration = "1s";
+
+          }
+
+        }
+
+      }
+
+      function updateInformationPane(id) {
+
+        if (id in poiForPokemonWithId) {
+
+          for (index in informationCells) {
+
+            var cell = informationCells[index];
+
+            cell.remove()
+
+          }
+
+          for (index in poiForPokemonWithId[id]) {
+
+            var poi = poiForPokemonWithId[id][index];
+            createInformationNode(poi.locationTitle, poi.locationDescription, poi.pokemonPresent.length, "1", "images/siteAssets/" + poi.poiType + "Icon.png");
+
+          }
+
+        }
+
+      }
+
+      function swap(json){
+
+        var ret = {};
+
+        for(var key in json){
+          ret[json[key]] = key;
+        }
+        return ret;
+
+      }
+
+      function makeMap() {
+
+        var marker = new google.maps.Marker({
+            position: {lat: lat, lng: long},
+            map: map,
+            icon: "images/pokemonPin2.png",
+            title: 'YOUR HERE!'
+        });
+
+        // GET POKEMON AROUND USERS LOCATION
+        var xmlHttp = new XMLHttpRequest();
+
+        xmlHttp.onreadystatechange = function() { 
+
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+
+                var responseText = xmlHttp.responseText;
+
+                plotPokemon(responseText);
+
+                // DRINKING FOUNTAINS DATA
+
+                var xmlHttp1 = new XMLHttpRequest();
+
+                xmlHttp1.onreadystatechange = function() { 
+
+                    if (xmlHttp1.readyState == 4 && xmlHttp1.status == 200) {
+
+                        plotPoiData(xmlHttp1.responseText);
+
+                        console.log(poiForPokemonWithId);
+
+                        console.log(allPOI[0]);
+
+                        allPOI.sort(function (a, b) {
+
+                          if (a.pokemonPresent.length < b.pokemonPresent.length) {
+
+                            return 1;
+
+                          }
+
+                          else if (a.pokemonPresent.length > b.pokemonPresent.length) {
+
+                            return -1;
+
+                          }
+                          // a must be equal to b
+                          return 0;
+
+                        });
+
+                        for (index in informationCells) {
+
+			            	var cell = informationCells[index];
+
+			           		cell.remove()
+
+			          	}
+
+                        for (index in allPOI) {
+
+                          var poi = allPOI[index];
+
+                          createInformationNode(poi.locationTitle, poi.locationDescription, poi.pokemonPresent.length, "1", "images/siteAssets/" + poi.poiType + "Icon.png");
+
+                        }
+
+                    }
+
+                }
+
+                xmlHttp1.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/drinkingFountains", true);
+                xmlHttp1.send(null);
+
+                // REQUEST FITNESS DATA
+
+                var xmlHttp2 = new XMLHttpRequest();
+
+                xmlHttp2.onreadystatechange = function() { 
+
+                    if (xmlHttp2.readyState == 4 && xmlHttp2.status == 200) {
+
+                        plotPoiData(xmlHttp2.responseText);
+
+                    }
+
+                }
+
+                xmlHttp2.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/fitnessEquipment", true);
+                xmlHttp2.send(null);
+
+                // REQUEST GRAFFITI DATA
+
+                var xmlHttp3 = new XMLHttpRequest();
+
+                xmlHttp3.onreadystatechange = function() { 
+
+                    if (xmlHttp3.readyState == 4 && xmlHttp3.status == 200) {
+
+                        plotPoiData(xmlHttp3.responseText);
+
+                    }
+
+                }
+
+                xmlHttp3.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/graffitiSites", true);
+                xmlHttp3.send(null);
+
+
+                // REQUEST PUBLIC TOILETS DATA
+
+                var xmlHttp4 = new XMLHttpRequest();
+
+                xmlHttp4.onreadystatechange = function() { 
+
+                    if (xmlHttp4.readyState == 4 && xmlHttp4.status == 200) {
+
+                        plotPoiData(xmlHttp4.responseText);
+
+                    }
+
+                }
+
+                xmlHttp4.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/explore/publicToilets", true);
+                xmlHttp4.send(null);
+
+                document.getElementById("loadingDiv").style.animationName = "hideEffect";
+                document.getElementById("loadingDiv").style.animationDuration = "1s";
+                pageLoaded = true;
+
+            }
+
+        }
+
+        xmlHttp.open("GET", "https://projects.sharddevelopment.com/apis/pokeapi/base-api/?lat=" + lat + "&long=" + long + "", true);
+        xmlHttp.send(null);
+
+      }
+
+      function initMap() {
+
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: lat, lng: long},
+          zoom: 16
+        });
+
+        getLocation();
+
+
+      }
+      
+    </script>
+
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAXhhVdUSCGgjnzNShe0PIHZWp9ki6ri3I&callback=initMap"
+    async defer></script>
+    <script type="text/javascript" src="pokedex.js"></script>
+
+
+  </body>
+
+</html>
+
+
+
